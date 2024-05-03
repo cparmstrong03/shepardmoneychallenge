@@ -10,12 +10,22 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.util.TreeMap;
+import java.util.SortedMap;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.io.Serializable;
+
 @Entity
 @Getter
 @Setter
 @ToString
-@RequiredArgsConstructor
-public class CreditCard {
+//@RequiredArgsConstructor
+public class CreditCard implements Serializable{
+
+    public CreditCard() {
+        this.balanceHistory = new TreeMap<LocalDate, Double>(new DateComparator());
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,8 +35,9 @@ public class CreditCard {
 
     private String number;
 
-    // TODO: Credit card's owner. For detailed hint, please see User class
+    // TODO: Credit card's owner. For detailed hint, please see User class     done
     // Some field here <> owner;
+    private int userId;
 
     // TODO: Credit card's balance history. It is a requirement that the dates in the balanceHistory 
     //       list must be in chronological order, with the most recent date appearing first in the list. 
@@ -41,6 +52,8 @@ public class CreditCard {
     //         {date: '2023-04-13', balance: 1100},
     //         {date: '2023-04-16', balance: 900},
     //       ]
+    private SortedMap<LocalDate, Double> balanceHistory;
+
     // ADDITIONAL NOTE: For the balance history, you can use any data structure that you think is appropriate.
     //        It can be a list, array, map, pq, anything. However, there are some suggestions:
     //        1. Retrieval of a balance of a single day should be fast
@@ -49,4 +62,13 @@ public class CreditCard {
     //        4. Deletion of a balance should be fast
     //        5. It is possible that there are gaps in between dates (note the 04-13 and 04-16)
     //        6. In the condition that there are gaps, retrieval of "closest **previous**" balance date should also be fast. Aka, given 4-15, return 4-13 entry tuple
+
+
+
+    private class DateComparator implements Comparator<LocalDate>, Serializable {
+        @Override
+        public int compare(LocalDate date1, LocalDate date2) {
+            return date1.compareTo(date2);
+        }
+    }
 }
