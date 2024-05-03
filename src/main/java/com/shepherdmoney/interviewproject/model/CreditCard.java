@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ElementCollection;
 
 import java.util.TreeMap;
 import java.util.SortedMap;
@@ -24,7 +25,7 @@ import java.io.Serializable;
 public class CreditCard implements Serializable{
 
     public CreditCard() {
-        this.balanceHistory = new SerializableTreeMap();
+        this.balanceHistory = new TreeMap<LocalDate, BalanceHistory>(new DateComparator());
     }
 
     @Id
@@ -54,7 +55,8 @@ public class CreditCard implements Serializable{
     //       ]
     
     //ok new plan is to use an arraylist and keep it sorted manually, use binarysearch to find items
-    private SerializableTreeMap balanceHistory;
+    @ElementCollection
+    private TreeMap<LocalDate, BalanceHistory> balanceHistory;
 
     // ADDITIONAL NOTE: For the balance history, you can use any data structure that you think is appropriate.
     //        It can be a list, array, map, pq, anything. However, there are some suggestions:
@@ -66,5 +68,10 @@ public class CreditCard implements Serializable{
     //        6. In the condition that there are gaps, retrieval of "closest **previous**" balance date should also be fast. Aka, given 4-15, return 4-13 entry tuple
 
 
-    
+    private class DateComparator implements Comparator<LocalDate>, Serializable {
+        @Override
+        public int compare(LocalDate date1, LocalDate date2) {
+            return date1.compareTo(date2);
+        }
+    }
 }

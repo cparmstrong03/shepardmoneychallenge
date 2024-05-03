@@ -137,7 +137,7 @@ public class CreditCardController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(0);
             }
             CreditCard card = optCard.get();
-            TreeMap<LocalDate, BalanceHistory> historyMap = card.getBalanceHistory().getMap();
+            TreeMap<LocalDate, BalanceHistory> historyMap = card.getBalanceHistory();
 
             LocalDate newDate = payloadItem.getBalanceDate();
             double newAmount = payloadItem.getBalanceAmount();
