@@ -2,10 +2,12 @@ package com.shepherdmoney.interviewproject.controller;
 
 //personal
 import com.shepherdmoney.interviewproject.repository.UserRepository;
+import com.shepherdmoney.interviewproject.repository.CreditCardRepository;
 import com.shepherdmoney.interviewproject.model.User;
 import org.springframework.http.HttpStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.shepherdmoney.interviewproject.vo.request.CreateUserPayload;
@@ -18,6 +20,8 @@ public class UserController {
     // TODO: wire in the user repository (~ 1 line)   done
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private CreditCardRepository creditCardRepository;
 
     @PutMapping("/user")
     public ResponseEntity<Integer> createUser(@RequestBody CreateUserPayload payload) {
@@ -37,11 +41,14 @@ public class UserController {
         // TODO: Return 200 OK if a user with the given ID exists, and the deletion is successful          done
         //       Return 400 Bad Request if a user with the ID does not exist
         //       The response body could be anything you consider appropriate
-        if (userRepository.findById(userId).isPresent()) {
-            userRepository.deleteById(userId);
-            return ResponseEntity.status(HttpStatus.OK).body("Deletion successful");   //also need to delete credit cards associated
+        Optional<User> optUser = userRepository.findById(userId);
+        if (!optUser.isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Bad request");
         }
+        User user = optUser.get();
+        for (Integer cardId : user.getCreditCards()) { creditCardRepository.deleteById(cardId); }
+        userRepository.deleteById(userId);
+        return ResponseEntity.status(HttpStatus.OK).body("Deletion successful");   //also need to delete credit cards associated
         
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Bad request");
     }
 }

@@ -49,31 +49,25 @@ public class CreditCardController {
         //       Return 200 OK with the credit card id if the user exists and credit card is successfully associated with the user
         //       Return other appropriate response code for other exception cases
         //       Do not worry about validating the card number, assume card number could be any arbitrary format and length
-        System.out.println("fjdskla;fdjskal");
+
         //first check if user exists
         Optional<User> optUser = userRepository.findById(payload.getUserId());
 
         if (!optUser.isPresent()) { return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(-1); }
         
         User currentUser = optUser.get();
-        //we get here
         
-        System.out.println("stop 2");
         CreditCard newCreditCard = new CreditCard();
         newCreditCard.setIssuanceBank(payload.getCardIssuanceBank());
         newCreditCard.setNumber(payload.getCardNumber());
         newCreditCard.setUserId(payload.getUserId());
 
-        //and here
-        System.out.println("stop 3");
         creditCardRepository.save(newCreditCard);
-        return ResponseEntity.ok().body(10000000);
         
-        // currentUser.getCreditCards().add(newCreditCard.getId());
-        // userRepository.save(currentUser);
-        // System.out.println("stop 4");
+        currentUser.getCreditCards().add(newCreditCard.getId());
+        userRepository.save(currentUser);
 
-        // return ResponseEntity.ok().body(newCreditCard.getId());
+        return ResponseEntity.ok().body(newCreditCard.getId());
         
 
         
@@ -100,14 +94,11 @@ public class CreditCardController {
     public ResponseEntity<Integer> getUserIdForCreditCard(@RequestParam String creditCardNumber) {
         // TODO: Given a credit card number, efficiently find whether there is a user associated with the credit card
         //       If so, return the user id in a 200 OK response. If no such user exists, return 400 Bad Request
-        List<CreditCard> allCards = creditCardRepository.findAll();
-        for (CreditCard card: allCards) {
-            //CreditCard card = allCards.next();
-            if (card.getNumber() == creditCardNumber) {
-                return ResponseEntity.ok(card.getUserId());
-            }
+        Optional<CreditCard> optCard = findCreditByNumber(creditCardNumber);
+        if (optCard.isPresent()) {
+            return ResponseEntity.ok(optCard.get().getUserId());
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(0);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(-1);
     }
 
     @PostMapping("/credit-card:update-balance")
@@ -131,18 +122,24 @@ public class CreditCardController {
         
 
         //for each update in list, add to list, propogate any changes upward
+
+
         for (UpdateBalancePayload payloadItem : payload) {
             Optional<CreditCard> optCard = findCreditByNumber(payloadItem.getCreditCardNumber());
             if (!optCard.isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(0);
             }
             CreditCard card = optCard.get();
-            TreeMap<LocalDate, BalanceHistory> historyMap = card.getBalanceHistory().getMap();
+            ArrayList<BalanceHistory> histories = card.getBalanceHistories();
 
             LocalDate newDate = payloadItem.getBalanceDate();
             double newAmount = payloadItem.getBalanceAmount();
 
-            historyMap.put(newDate, new BalanceHistory(newDate, newAmount));
+            //add the new BalanceHistory in the correct order in the list
+            for (int i = 0; i < histories.size(); i++) {
+                if (newDate.compareTo(histories.get(i)))
+            }
+            histories.put(newDate, new BalanceHistory(newDate, newAmount));
             
             BalanceHistory previousHistory = historyMap.lowerEntry(payloadItem.getBalanceDate()).getValue();
             double balanceDiff = newAmount - previousHistory.getBalance();
@@ -160,8 +157,8 @@ public class CreditCardController {
             }
 
         } 
-
         return ResponseEntity.ok(0);
+
     }
 
 
@@ -169,7 +166,7 @@ public class CreditCardController {
         //naive approach, not efficient
         List<CreditCard> allCards = creditCardRepository.findAll();
         for (CreditCard card: allCards) {
-            if (card.getNumber() == cardNumber) {
+            if (card.getNumber().equals(cardNumber)) {
                 return Optional.of(card);
             }
         }

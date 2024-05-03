@@ -9,9 +9,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ElementCollection;
 
 import java.util.TreeMap;
 import java.util.SortedMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.io.Serializable;
@@ -24,7 +27,7 @@ import java.io.Serializable;
 public class CreditCard implements Serializable{
 
     public CreditCard() {
-        this.balanceHistory = new SerializableTreeMap();
+        this.balanceHistories = new ArrayList<BalanceHistory>();
     }
 
     @Id
@@ -54,7 +57,11 @@ public class CreditCard implements Serializable{
     //       ]
     
     //ok new plan is to use an arraylist and keep it sorted manually, use binarysearch to find items
-    private SerializableTreeMap balanceHistory;
+    //private SerializableTreeMap balanceHistory;
+
+    //last attempt was too large to fit in sql column, trying simple arraylist just to make something work
+    @ElementCollection
+    private List<BalanceHistory> balanceHistories;
 
     // ADDITIONAL NOTE: For the balance history, you can use any data structure that you think is appropriate.
     //        It can be a list, array, map, pq, anything. However, there are some suggestions:

@@ -1,6 +1,7 @@
 package com.shepherdmoney.interviewproject.model;
 
 import java.time.LocalDate;
+import java.io.Serializable;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,7 +19,7 @@ import lombok.NonNull;
 @Setter
 @ToString
 @RequiredArgsConstructor
-public class BalanceHistory {
+public class BalanceHistory implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
