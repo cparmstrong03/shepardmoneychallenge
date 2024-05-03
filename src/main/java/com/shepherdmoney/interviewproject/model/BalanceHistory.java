@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import lombok.NonNull;
+
 @Entity
 @Getter
 @Setter
@@ -22,8 +24,10 @@ public class BalanceHistory {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
     
+    @NonNull
     private LocalDate date;
 
+    @NonNull
     private double balance;
     
 }

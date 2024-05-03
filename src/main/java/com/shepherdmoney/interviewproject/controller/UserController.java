@@ -39,7 +39,7 @@ public class UserController {
         //       The response body could be anything you consider appropriate
         if (userRepository.findById(userId).isPresent()) {
             userRepository.deleteById(userId);
-            return ResponseEntity.status(HttpStatus.OK).body("Deletion successful");
+            return ResponseEntity.status(HttpStatus.OK).body("Deletion successful");   //also need to delete credit cards associated
         }
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Bad request");

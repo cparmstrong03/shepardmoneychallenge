@@ -3,12 +3,16 @@ package com.shepherdmoney.interviewproject.controller;
 //personal
 import com.shepherdmoney.interviewproject.repository.CreditCardRepository;
 import com.shepherdmoney.interviewproject.repository.UserRepository;
+// import com.shepherdmoney.interviewproject.repository.CardMapRepository;
 import com.shepherdmoney.interviewproject.model.CreditCard;
 import com.shepherdmoney.interviewproject.model.User;
+import com.shepherdmoney.interviewproject.model.BalanceHistory;
+import com.shepherdmoney.interviewproject.model.SerializableTreeMap;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.TreeMap;
+import java.util.HashMap;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.io.Serializable;
@@ -34,6 +38,9 @@ public class CreditCardController {
     private CreditCardRepository creditCardRepository;
     @Autowired
     private UserRepository userRepository;
+    // @Autowired
+    // private CardMapRepository cardMapRepository;
+
 
 
     @PostMapping("/credit-card")
@@ -42,27 +49,34 @@ public class CreditCardController {
         //       Return 200 OK with the credit card id if the user exists and credit card is successfully associated with the user
         //       Return other appropriate response code for other exception cases
         //       Do not worry about validating the card number, assume card number could be any arbitrary format and length
-
+        System.out.println("fjdskla;fdjskal");
         //first check if user exists
         Optional<User> optUser = userRepository.findById(payload.getUserId());
-        if (optUser.isPresent()) {
-            User currentUser = optUser.get();
-            
-            CreditCard newCreditCard = new CreditCard();
-            newCreditCard.setIssuanceBank(payload.getCardIssuanceBank());
-            newCreditCard.setNumber(payload.getCardNumber());
-            newCreditCard.setUserId(payload.getUserId());
-            //TreeMap<LocalDate, Double> history = new TreeMap<LocalDate, Double>(new DateComparator());
-            //newCreditCard.setBalanceHistory(history);
-            creditCardRepository.save(newCreditCard);
-            
-            currentUser.getCreditCards().add(newCreditCard.getId());
-            userRepository.save(currentUser);
 
-            return ResponseEntity.ok().body(newCreditCard.getId());
-        }
+        if (!optUser.isPresent()) { return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(-1); }
+        
+        User currentUser = optUser.get();
+        //we get here
+        
+        System.out.println("stop 2");
+        CreditCard newCreditCard = new CreditCard();
+        newCreditCard.setIssuanceBank(payload.getCardIssuanceBank());
+        newCreditCard.setNumber(payload.getCardNumber());
+        newCreditCard.setUserId(payload.getUserId());
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(0);
+        //and here
+        System.out.println("stop 3");
+        creditCardRepository.save(newCreditCard);
+        return ResponseEntity.ok().body(10000000);
+        
+        // currentUser.getCreditCards().add(newCreditCard.getId());
+        // userRepository.save(currentUser);
+        // System.out.println("stop 4");
+
+        // return ResponseEntity.ok().body(newCreditCard.getId());
+        
+
+        
     }
 
     @GetMapping("/credit-card:all")
@@ -112,8 +126,63 @@ public class CreditCardController {
         //      3. You propagate that +10 difference until today
         //      Return 200 OK if update is done and successful, 400 Bad Request if the given card number
         //        is not associated with a card.
+
+        //first fetch credit card
         
-        return null;
+
+        //for each update in list, add to list, propogate any changes upward
+        for (UpdateBalancePayload payloadItem : payload) {
+            Optional<CreditCard> optCard = findCreditByNumber(payloadItem.getCreditCardNumber());
+            if (!optCard.isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(0);
+            }
+            CreditCard card = optCard.get();
+            TreeMap<LocalDate, BalanceHistory> historyMap = card.getBalanceHistory().getMap();
+
+            LocalDate newDate = payloadItem.getBalanceDate();
+            double newAmount = payloadItem.getBalanceAmount();
+
+            historyMap.put(newDate, new BalanceHistory(newDate, newAmount));
+            
+            BalanceHistory previousHistory = historyMap.lowerEntry(payloadItem.getBalanceDate()).getValue();
+            double balanceDiff = newAmount - previousHistory.getBalance();
+
+            if (balanceDiff != 0) {
+                for (BalanceHistory curr = historyMap.higherEntry(newDate).getValue(); curr != null;
+                     curr = historyMap.higherEntry(curr.getDate()).getValue()) {
+                        curr.setBalance(curr.getBalance() + balanceDiff);
+                    }
+            }
+            //add a balance history for todays date if does not exist, balance is last known value
+            BalanceHistory mostRecentBalance = historyMap.pollLastEntry().getValue();
+            if (!mostRecentBalance.getDate().isEqual(LocalDate.now())) {
+                historyMap.put(LocalDate.now(), new BalanceHistory(LocalDate.now(), mostRecentBalance.getBalance()));
+            }
+
+        } 
+
+        return ResponseEntity.ok(0);
     }
-    
+
+
+    public Optional<CreditCard> findCreditByNumber(String cardNumber) {
+        //naive approach, not efficient
+        List<CreditCard> allCards = creditCardRepository.findAll();
+        for (CreditCard card: allCards) {
+            if (card.getNumber() == cardNumber) {
+                return Optional.of(card);
+            }
+        }
+        return Optional.empty();
+
+
+        //below code is implementation using extra repo, still need to adjust to not use raw integer
+        // Optional<Integer> cardId = cardMapRepository.findById(cardNumber);
+        // if (cardId.isPresent()) {
+        //     Optional<CreditCard> card = creditCardRepository.findById(cardId.get());
+        //     if (card.isPresent()) {return card;}
+        // }
+        // return Optional.empty();
+    }
+
 }
