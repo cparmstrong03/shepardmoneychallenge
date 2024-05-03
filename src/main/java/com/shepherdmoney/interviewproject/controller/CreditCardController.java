@@ -134,29 +134,46 @@ public class CreditCardController {
 
             LocalDate newDate = payloadItem.getBalanceDate();
             double newAmount = payloadItem.getBalanceAmount();
+            BalanceHistory newBalanceHistory = new BalanceHistory(newDate, newAmount);
 
             //add the new BalanceHistory in the correct order in the list
-            for (int i = 0; i < histories.size(); i++) {
-                if (newDate.compareTo(histories.get(i)))
+            int index;
+            for (index = 0; index < histories.size(); index++) {
+                if (newDate.compareTo(histories.get(index).getDate()) > 0) { //add in proper place of the list
+                    histories.add(index, newBalanceHistory);
+                    break;
+                } else if (newDate.compareTo(histories.get(index).getDate()) == 0) { //remove old value for that date and replace
+                    histories.remove(index);
+                    histories.add(index, newBalanceHistory);
+                    break;
+                }
             }
-            histories.put(newDate, new BalanceHistory(newDate, newAmount));
-            
-            BalanceHistory previousHistory = historyMap.lowerEntry(payloadItem.getBalanceDate()).getValue();
+
+            if (index == histories.size() - 1) { //will be last item in list no need to propogate changes
+                histories.add(index, newBalanceHistory);
+                break;
+            }
+
+            BalanceHistory previousHistory = histories.get(index + 1);
             double balanceDiff = newAmount - previousHistory.getBalance();
 
-            if (balanceDiff != 0) {
-                for (BalanceHistory curr = historyMap.higherEntry(newDate).getValue(); curr != null;
-                     curr = historyMap.higherEntry(curr.getDate()).getValue()) {
-                        curr.setBalance(curr.getBalance() + balanceDiff);
+            if (balanceDiff != 0 && index > 0) {
+                for (int i = index - 1; i >= 0; i--) {
+                        BalanceHistory prev = histories.get(i);
+                        prev.setBalance(prev.getBalance() + balanceDiff);
                     }
             }
+
             //add a balance history for todays date if does not exist, balance is last known value
-            BalanceHistory mostRecentBalance = historyMap.pollLastEntry().getValue();
+            BalanceHistory mostRecentBalance = histories.get(0);
             if (!mostRecentBalance.getDate().isEqual(LocalDate.now())) {
-                historyMap.put(LocalDate.now(), new BalanceHistory(LocalDate.now(), mostRecentBalance.getBalance()));
+                histories.add(0, new BalanceHistory(LocalDate.now(), mostRecentBalance.getBalance()));
             }
 
         } 
+        
+
+
         return ResponseEntity.ok(0);
 
     }

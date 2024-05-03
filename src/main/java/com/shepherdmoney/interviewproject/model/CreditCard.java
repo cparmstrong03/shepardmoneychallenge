@@ -61,7 +61,7 @@ public class CreditCard implements Serializable{
 
     //last attempt was too large to fit in sql column, trying simple arraylist just to make something work
     @ElementCollection
-    private List<BalanceHistory> balanceHistories;
+    private ArrayList<BalanceHistory> balanceHistories;
 
     // ADDITIONAL NOTE: For the balance history, you can use any data structure that you think is appropriate.
     //        It can be a list, array, map, pq, anything. However, there are some suggestions:
